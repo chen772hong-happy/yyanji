@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#2C3E50"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="言己"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <title>言己</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --primary:#2C3E50;
+      --primary-light:#3D5166;
+      --gold:#E8C97E;
+      --gold-light:#F2DCAA;
+      --bg:#F7F5F0;
+      --bg2:#EFEDE7;
+      --white:#FFFFFF;
+      --text:#1A1A2E;
+      --text2:#7A7A8A;
+      --radius:14px;
+      --shadow:0 2px 12px rgba(44,62,80,0.08);
+      --shadow-md:0 4px 20px rgba(44,62,80,0.14);
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB',sans-serif;-webkit-font-smoothing:antialiased}
+    #app{max-width:480px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden;background:var(--bg)}
+    .screen{display:none;flex-direction:column;flex:1;overflow:hidden}
+    .screen.active{display:flex}
+    .navbar{display:flex;align-items:center;padding:14px 16px 10px;background:var(--white);border-bottom:1px solid rgba(44,62,80,0.08);gap:10px;flex-shrink:0}
+    .nav-back{font-size:22px;cursor:pointer;color:var(--primary);line-height:1;padding:2px 4px}
+    .nav-title{flex:1;font-size:17px;font-weight:600;color:var(--text)}
+    .nav-action{font-size:20px;cursor:pointer;color:var(--text2);padding:2px 4px}
+    /* LOGIN */
+    #screen-login{justify-content:flex-start;align-items:stretch;overflow-y:auto}
+    .login-hero{background:linear-gradient(150deg,#2C3E50 0%,#3D5166 60%,#4A6278 100%);padding:42px 24px 32px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+    .login-hero-logo{font-size:52px;line-height:1;margin-bottom:4px}
+    .login-hero-title{font-size:30px;font-weight:800;color:#fff;letter-spacing:2px}
+    .login-hero-sub{font-size:14px;color:rgba(255,255,255,0.7);margin-top:4px}
+    .login-hero-slogans{margin-top:14px;display:flex;flex-direction:column;gap:4px;width:100%}
+    .slogan-item{font-size:13px;color:rgba(255,255,255,0.6);text-align:center}
+    .login-form-wrap{padding:24px 24px 40px;display:flex;flex-direction:column}
+    .tab-row{display:flex;border-bottom:2px solid #ECEAE4;margin-bottom:20px}
+    .tab-btn{flex:1;padding:10px;text-align:center;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
+    .tab-btn.active{color:var(--primary);border-bottom-color:var(--gold)}
+    .form-group{margin-bottom:14px}
+    .form-label{font-size:13px;color:var(--text2);margin-bottom:5px;display:block}
+    .form-input{width:100%;padding:12px 14px;border:1.5px solid #E0DDD5;border-radius:12px;font-size:15px;background:var(--white);color:var(--text);outline:none;transition:border-color .2s;font-family:inherit}
+    .form-input:focus{border-color:var(--primary)}
+    .choice-row{display:flex;gap:8px;flex-wrap:wrap}
+    .choice-btn{flex:1;min-width:0;padding:10px 8px;border:1.5px solid #E0DDD5;border-radius:12px;background:var(--white);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;text-align:center;transition:all .15s;white-space:nowrap}
+    .choice-btn.selected{border-color:var(--primary);background:#EAF0F6;color:var(--primary);font-weight:600}
+    .btn-primary{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px;transition:background .15s,transform .1s}
+    .btn-primary:active{background:var(--primary-light);transform:scale(.98)}
+    .btn-primary:disabled{background:#CCC;cursor:not-allowed}
+    .error-msg{color:#C0392B;font-size:13px;text-align:center;margin-top:8px;min-height:18px}
+    .privacy-note{font-size:11px;color:#AAA8A0;text-align:center;margin-top:12px;line-height:1.7}
+    /* CHAT */
+    #screen-chat{background:var(--bg)}
+    .chat-header{display:flex;align-items:center;padding:12px 16px 10px;background:var(--primary);gap:10px;flex-shrink:0}
+    .chat-header .header-left{font-size:22px;cursor:pointer;color:rgba(255,255,255,0.8);padding:2px 4px}
+    .chat-header .header-date{flex:1;text-align:center;color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+    .chat-header .header-right{font-size:22px;cursor:pointer;color:rgba(255,255,255,0.8);padding:2px 4px}
+    .messages-area{flex:1;overflow-y:auto;padding:16px 12px 8px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+    .msg-row{display:flex;gap:8px;max-width:88%}
+    .msg-row.user{align-self:flex-end;flex-direction:row-reverse}
+    .msg-row.assistant{align-self:flex-start}
+    .msg-bubble{padding:12px 15px;border-radius:18px;font-size:15px;line-height:1.65;word-break:break-word;white-space:pre-wrap}
+    .msg-row.user .msg-bubble{background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+    .msg-row.assistant .msg-bubble{background:var(--white);color:var(--text);border-bottom-left-radius:4px;box-shadow:var(--shadow);border-left:3px solid var(--gold)}
+    .msg-time{font-size:11px;color:var(--text2);margin-top:4px;text-align:right}
+    .msg-row.assistant .msg-time{text-align:left}
+    .typing-indicator{display:flex;align-items:center;gap:5px;padding:14px 16px;background:var(--white);border-radius:18px;border-bottom-left-radius:4px;box-shadow:var(--shadow);border-left:3px solid var(--gold);width:fit-content}
+    .typing-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:typing-bounce 1.2s ease-in-out infinite}
+    .typing-dot:nth-child(2){animation-delay:.2s}
+    .typing-dot:nth-child(3){animation-delay:.4s}
+    @keyframes typing-bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-6px);opacity:1}}
+    .input-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 12px 14px;background:var(--white);border-top:1px solid rgba(44,62,80,0.08);flex-shrink:0}
+    .input-bar textarea{flex:1;border:1.5px solid #E0DDD5;border-radius:18px;padding:10px 14px;font-size:15px;resize:none;outline:none;background:var(--bg);color:var(--text);max-height:96px;line-height:1.5;font-family:inherit;transition:border-color .2s}
+    .input-bar textarea:focus{border-color:var(--primary)}
+    .send-btn{width:42px;height:42px;border-radius:50%;background:var(--primary);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,transform .1s}
+    .send-btn:active{background:var(--primary-light);transform:scale(.92)}
+    .send-btn:disabled{background:#CCC;cursor:not-allowed}
+    .mic-btn{width:42px;height:42px;border-radius:50%;background:var(--bg2);border:1.5px solid #E0DDD5;color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+    .mic-btn.recording{background:#C0392B!important;border-color:#C0392B!important;color:#fff!important;animation:mic-pulse 1.4s ease-in-out infinite}
+    @keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.4)}50%{box-shadow:0 0 0 8px rgba(192,57,43,0)}}
+    .recording-bar{display:none;flex-direction:column;gap:5px;padding:8px 14px 6px;background:var(--white);border-top:1px solid rgba(44,62,80,0.06);flex-shrink:0}
+    .recording-bar.active{display:flex}
+    .recording-bar-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .rec-timer{font-size:13px;font-weight:600;color:var(--text2);min-width:70px;font-variant-numeric:tabular-nums}
+    .rec-hint{font-size:12px;color:var(--text2)}
+    .rec-progress-wrap{flex:1;height:4px;background:#E0DDD5;border-radius:2px;overflow:hidden}
+    .rec-progress-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .25s linear}
+    .input-transcribing{position:absolute;inset:0;border-radius:18px;background:rgba(247,245,240,0.92);display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--text2);pointer-events:none}
+    .input-transcribing .spin{width:14px;height:14px;border:2px solid #E0DDD5;border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    /* DATE PICKER */
+    .date-picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+    .date-picker-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 24px 40px;width:100%;max-width:480px}
+    .date-picker-title{font-size:16px;font-weight:600;text-align:center;margin-bottom:16px;color:var(--text)}
+    .date-picker-months{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .dp-month-btn{padding:8px 4px;border-radius:8px;border:none;background:var(--bg);font-size:13px;cursor:pointer;color:var(--text2);text-align:center}
+    .dp-month-btn.has-conv{color:var(--primary);font-weight:600;background:#EAF0F6}
+    .dp-month-btn.today{border:1.5px solid var(--gold)}
+    .dp-month-btn.selected{background:var(--primary);color:#fff}
+    /* TIMELINE */
+    #screen-timeline{overflow:hidden;background:var(--bg)}
+    .timeline-header{background:var(--primary);padding:14px 16px 10px;flex-shrink:0}
+    .timeline-header-row{display:flex;align-items:center;gap:10px}
+    .timeline-back{font-size:22px;cursor:pointer;color:rgba(255,255,255,0.8)}
+    .timeline-title{flex:1;text-align:center;color:#fff;font-size:17px;font-weight:600}
+    .timeline-tabs{display:flex;margin-top:12px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,0.1)}
+    .tl-tab{flex:1;padding:8px;text-align:center;color:rgba(255,255,255,0.6);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s}
+    .tl-tab.active{background:var(--gold);color:var(--primary);font-weight:700}
+    .timeline-body{flex:1;overflow-y:auto;padding:16px 12px}
+    .emotion-chart-wrap{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+    .emotion-chart-title{font-size:13px;color:var(--text2);margin-bottom:10px;font-weight:500}
+    canvas#emotionChart{width:100%;height:80px;display:block}
+    .summary-card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border-left:3px solid var(--gold)}
+    .summary-card-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .summary-date{font-size:13px;color:var(--text2);font-weight:500}
+    .summary-emotion{font-size:18px;line-height:1}
+    .summary-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+    .summary-tag{padding:3px 10px;border-radius:20px;background:#EAF0F6;color:var(--primary);font-size:12px;font-weight:500}
+    .summary-content{font-size:14px;color:var(--text);line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;transition:all .3s}
+    .summary-content.expanded{-webkit-line-clamp:unset;display:block}
+    .summary-expand-btn{font-size:12px;color:var(--text2);margin-top:6px;cursor:pointer;text-align:right}
+    /* PROFILE */
+    #screen-profile{overflow-y:auto}
+    .profile-header{background:linear-gradient(135deg,var(--primary),var(--primary-light));padding:32px 20px 28px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+    .profile-avatar{font-size:56px;line-height:1}
+    .profile-name{font-size:20px;font-weight:700;color:#fff}
+    .profile-phone{font-size:14px;color:rgba(255,255,255,.7)}
+    .profile-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+    .profile-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .profile-card-title{font-size:12px;font-weight:600;color:var(--text2);padding:12px 16px 6px;text-transform:uppercase;letter-spacing:.5px}
+    .profile-row{display:flex;align-items:center;padding:13px 16px;gap:12px;border-top:1px solid #F0EDE7;cursor:pointer}
+    .profile-row:first-child{border-top:none}
+    .row-icon{font-size:20px}
+    .row-label{flex:1;font-size:15px;color:var(--text)}
+    .row-value{font-size:14px;color:var(--text2)}
+    .row-arrow{font-size:14px;color:#CCC}
+    .sub-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+    .sub-badge.pro{background:#FFF3CD;color:#B8860B}
+    .sub-badge.free{background:#F0F0F0;color:#888}
+    .activate-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #F0EDE7}
+    .activate-row input{flex:1;padding:9px 12px;border:1.5px solid #E0DDD5;border-radius:10px;font-size:14px;outline:none}
+    .activate-row input:focus{border-color:var(--primary)}
+    .activate-row button{padding:9px 16px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
+    /* LOADING + TOAST */
+    .loading-overlay{position:fixed;inset:0;background:rgba(247,245,240,.85);display:none;align-items:center;justify-content:center;z-index:100;font-size:15px;color:var(--text2);flex-direction:column;gap:10px}
+    .loading-overlay.active{display:flex}
+    .loading-spinner{width:36px;height:36px;border:3px solid #E0DDD5;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+    .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,40,.88);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
+</head>
+<body>
+<div id="app">
+<!-- LOGIN -->
+<div id="screen-login" class="screen active">
+  <div class="login-hero">
+    <div class="login-hero-logo">📖</div>
+    <div class="login-hero-title">言己</div>
+    <div class="login-hero-sub">记录自己，看见成长</div>
+    <div class="login-hero-slogans">
+      <div class="slogan-item">✍️ 随手记录，思想有处安放</div>
+      <div class="slogan-item">🧠 AI 越来越懂你，陪伴越来越深</div>
+      <div class="slogan-item">🌱 日积月累，看见自己的成长轨迹</div>
+    </div>
+  </div>
+  <div class="login-form-wrap">
+    <div class="tab-row">
+      <div class="tab-btn active" data-tab="login" onclick="switchTab('login')">登录</div>
+      <div class="tab-btn" data-tab="register" onclick="switchTab('register')">注册</div>
+    </div>
+    <!-- 登录 -->
+    <div id="form-login">
+      <div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="login-phone" type="tel" placeholder="请输入手机号"/></div>
+      <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="login-password" type="password" placeholder="请输入密码"/></div>
+      <button class="btn-primary" onclick="doLogin()">登录</button>
+      <div class="error-msg" id="login-error"></div>
+      <div class="privacy-note">🔒 数据加密存储，仅用于生成个人成长建议</div>
+    </div>
+    <!-- 注册 -->
+    <div id="form-register" style="display:none">
+      <div class="form-group"><label class="form-label">昵称 *</label><input class="form-input" id="reg-nickname" type="text" placeholder="怎么称呼你？"/></div>
+      <div class="form-group"><label class="form-label">手机号 *</label><input class="form-input" id="reg-phone" type="tel" placeholder="请输入手机号"/></div>
+      <div class="form-group"><label class="form-label">密码 *</label><input class="form-input" id="reg-password" type="password" placeholder="至少6位"/></div>
+      <div class="form-group">
+        <label class="form-label">出生年份 *</label>
+        <select class="form-input" id="reg-birth-year"><option value="">请选择</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">出生月份 *</label>
+        <select class="form-input" id="reg-birth-month">
+          <option value="">请选择</option>
+          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+          <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+          <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">出生日期 *</label>
+        <select class="form-input" id="reg-birth-day">
+          <option value="">请选择</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">出生时辰（可选）</label>
+        <select class="form-input" id="reg-birth-hour">
+          <option value="">不填</option>
+          <option value="子时">子时（23-1点）</option><option value="丑时">丑时（1-3点）</option>
+          <option value="寅时">寅时（3-5点）</option><option value="卯时">卯时（5-7点）</option>
+          <option value="辰时">辰时（7-9点）</option><option value="巳时">巳时（9-11点）</option>
+          <option value="午时">午时（11-13点）</option><option value="未时">未时（13-15点）</option>
+          <option value="申时">申时（15-17点）</option><option value="酉时">酉时（17-19点）</option>
+          <option value="戌时">戌时（19-21点）</option><option value="亥时">亥时（21-23点）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">性别（可选）</label>
+        <div class="choice-row">
+          <button class="choice-btn" data-group="gender" data-value="男" onclick="selectChoice(this)">男</button>
+          <button class="choice-btn" data-group="gender" data-value="女" onclick="selectChoice(this)">女</button>
+          <button class="choice-btn" data-group="gender" data-value="不填" onclick="selectChoice(this)">不填</button>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">一句话描述自己（可选）</label><input class="form-input" id="reg-self-desc" type="text" placeholder="如：在大城市打拼的普通人"/></div>
+      <div class="form-group"><label class="form-label">使用码 *</label><input class="form-input" id="reg-invite" type="text" placeholder="请输入使用码" style="text-transform:uppercase"/></div>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:16px">
+        <input type="checkbox" id="agree" style="margin-top:3px;cursor:pointer" onchange="agreeChanged()">
+        <label for="agree" style="font-size:13px;color:#8A887E;line-height:1.5;cursor:pointer">
+          我已阅读并同意<span style="color:var(--primary);cursor:pointer" onclick="showToast('服务条款页面建设中')">《服务条款》</span>和<span style="color:var(--primary);cursor:pointer" onclick="showToast('隐私政策页面建设中')">《隐私政策》</span>，理解 AI 建议仅供参考
+        </label>
+      </div>
+      <button class="btn-primary" id="reg-btn" onclick="doRegister()" disabled>注册</button>
+      <div class="error-msg" id="reg-error"></div>
+    </div>
+  </div>
+</div>
+<!-- CHAT -->
+<div id="screen-chat" class="screen">
+  <div class="chat-header">
+    <span class="header-left" onclick="showScreen('timeline')">📊</span>
+    <span class="header-date" id="chat-date-display" onclick="openDatePicker()">今天</span>
+    <span class="header-right" onclick="showScreen('profile')">👤</span>
+  </div>
+  <div class="messages-area" id="messages-area"></div>
+  <div class="recording-bar" id="recording-bar">
+    <div class="recording-bar-row">
+      <span class="rec-hint" id="rec-hint">🎤 正在录音…</span>
+      <span class="rec-timer" id="rec-timer">0:00 / 5:00</span>
+    </div>
+    <div class="recording-bar-row">
+      <div class="rec-progress-wrap"><div class="rec-progress-fill" id="rec-progress"></div></div>
+      <button onclick="stopRecording()" style="margin-left:8px;padding:3px 12px;background:#C0392B;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;flex-shrink:0">停止</button>
+    </div>
+  </div>
+  <div class="input-bar">
+    <div style="flex:1;position:relative">
+      <textarea id="chat-input" rows="1" placeholder="随手写下你的想法…" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+      <div class="input-transcribing" id="input-transcribing" style="display:none"><div class="spin"></div><span>转写中…</span></div>
+    </div>
+    <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">🎤</button>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+<!-- DATE PICKER -->
+<div id="date-picker-overlay" class="date-picker-overlay" style="display:none" onclick="closeDatePicker(event)">
+  <div class="date-picker-sheet" onclick="event.stopPropagation()">
+    <div class="date-picker-title" id="dp-title">选择日期</div>
+    <div id="dp-nav" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <button onclick="dpPrevMonth()" style="border:none;background:none;font-size:18px;cursor:pointer;color:var(--primary)">‹</button>
+      <span id="dp-month-label" style="font-size:15px;font-weight:600;color:var(--text)"></span>
+      <button onclick="dpNextMonth()" style="border:none;background:none;font-size:18px;cursor:pointer;color:var(--primary)">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">
+      <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">日</div>
+      <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">一</div>
+      <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">二</div>
+      <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">三</div>
+      <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">四</div>
+      <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">五</div>
+      <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">六</div>
+    </div>
+    <div id="dp-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
+    <button onclick="closeDatePicker()" style="width:100%;margin-top:16px;padding:12px;border:none;background:var(--bg);border-radius:10px;font-size:15px;cursor:pointer;color:var(--text2)">取消</button>
+  </div>
+</div>
+<!-- TIMELINE -->
+<div id="screen-timeline" class="screen">
+  <div class="timeline-header">
+    <div class="timeline-header-row">
+      <span class="timeline-back" onclick="showScreen('chat')">←</span>
+      <span class="timeline-title">成长轨迹</span>
+      <span style="width:28px"></span>
+    </div>
+    <div class="timeline-tabs">
+      <div class="tl-tab active" data-tab="daily" onclick="switchTlTab('daily')">日</div>
+      <div class="tl-tab" data-tab="weekly" onclick="switchTlTab('weekly')">周</div>
+      <div class="tl-tab" data-tab="monthly" onclick="switchTlTab('monthly')">月</div>
+      <div class="tl-tab" data-tab="yearly" onclick="switchTlTab('yearly')">年</div>
+    </div>
+  </div>
+  <div class="timeline-body" id="timeline-body">
+    <div class="emotion-chart-wrap" id="emotion-chart-wrap">
+      <div class="emotion-chart-title">近30天情绪趋势</div>
+      <canvas id="emotionChart"></canvas>
+    </div>
+    <div id="summary-list"></div>
+  </div>
+</div>
+<!-- PROFILE -->
+<div id="screen-profile" class="screen">
+  <div class="navbar">
+    <span class="nav-back" onclick="showScreen('chat')">←</span>
+    <span class="nav-title">我的档案</span>
+  </div>
+  <div class="profile-header">
+    <div class="profile-avatar">🧘</div>
+    <div class="profile-name" id="profile-name">—</div>
+    <div class="profile-phone" id="profile-phone">—</div>
+  </div>
+  <div class="profile-body">
+    <div class="profile-card">
+      <div class="profile-card-title">个人信息</div>
+      <div class="profile-row">
+        <span class="row-icon">🎂</span>
+        <span class="row-label">出生年月</span>
+        <span class="row-value" id="profile-birth">—</span>
+      </div>
+      <div class="profile-row" id="profile-birth-hour-row" style="display:none">
+        <span class="row-icon">🕐</span>
+        <span class="row-label">出生时辰</span>
+        <span class="row-value" id="profile-birth-hour">—</span>
+      </div>
+      <div class="profile-row" id="profile-self-desc-row" style="display:none">
+        <span class="row-icon">💬</span>
+        <span class="row-label" id="profile-self-desc">—</span>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-card-title">订阅状态</div>
+      <div class="profile-row">
+        <span class="row-icon">✨</span>
+        <span class="row-label">当前套餐</span>
+        <span class="row-value" id="sub-plan-text">—</span>
+      </div>
+      <div class="profile-row">
+        <span class="row-icon">💬</span>
+        <span class="row-label">本月使用</span>
+        <span class="row-value" id="sub-usage-text">—</span>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-card-title">兑换使用码</div>
+      <div class="activate-row">
+        <input id="activate-input" type="text" placeholder="输入使用码" style="text-transform:uppercase"/>
+        <button onclick="doActivate()">兑换</button>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-row" onclick="doLogout()" style="color:#C0392B">
+        <span class="row-icon">🚪</span>
+        <span class="row-label" style="color:#C0392B">退出登录</span>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- LOADING / TOAST -->
+<div class="loading-overlay" id="loading-overlay"><div class="loading-spinner"></div><span id="loading-text">加载中…</span></div>
+<div class="toast" id="toast"></div>
+</div>
+<script>
+const API='';
+let token=localStorage.getItem('yy_token')||'';
+let currentUser=JSON.parse(localStorage.getItem('yy_user')||'null');
+let currentConvId=null;
+let currentDate=todayStr();
+let isStreaming=false;
+let convDates=[];
+let agreeTerms=false;
+let isRecording=false;
+let mediaRecorder=null;
+let recordedChunks=[];
+let recStartTime=0;
+let recTimerInterval=null;
+let _recStream=null;
+const MAX_REC_SECS=300;
+
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fmtDate(s){if(!s)return '';const[y,m,d]=s.split('-');return y+'年'+parseInt(m)+'月'+parseInt(d)+'日'}
+function fmtTime(s){const d=new Date(s);return d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}
+function maskPhone(p){if(!p||p.length<7)return p;return p.slice(0,3)+'****'+p.slice(-4)}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function apiFetch(path,opts={}){
+  const h={'Content-Type':'application/json'};
+  if(token)h['Authorization']='Bearer '+token;
+  return fetch(API+path,{headers:h,...opts}).then(async r=>{
+    const b=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(b?.detail?.error||b?.detail||'请求失败');
+    return b.data!==undefined?b.data:b;
+  });
+}
+
+function showLoading(t='加载中…'){document.getElementById('loading-text').textContent=t;document.getElementById('loading-overlay').classList.add('active')}
+function hideLoading(){document.getElementById('loading-overlay').classList.remove('active')}
+let toastTimer=null;
+function showToast(msg,dur=2200){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('show'),dur)}
+function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');if(n==='profile')loadProfile();if(n==='timeline')loadTimeline('daily')}
+function switchTab(t){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.getElementById('form-login').style.display=t==='login'?'':'none';document.getElementById('form-register').style.display=t==='register'?'':'none'}
+function selectChoice(btn){const g=btn.dataset.group;document.querySelectorAll('[data-group="'+g+'"]').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected')}
+function getChoice(g){const s=document.querySelector('[data-group="'+g+'"].selected');return s?s.dataset.value:null}
+function agreeChanged(){agreeTerms=document.getElementById('agree').checked;document.getElementById('reg-btn').disabled=!agreeTerms}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,96)+'px'}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}}
+
+// ── Init year dropdown ──
+(function(){
+  const sel=document.getElementById('reg-birth-year');
+  const now=new Date().getFullYear();
+  for(let y=now;y>=1940;y--){const o=document.createElement('option');o.value=y;o.textContent=y+'年';sel.appendChild(o)}
+  // 月份变化时更新日期
+  document.getElementById('reg-birth-month').addEventListener('change',updateDayOptions);
+  document.getElementById('reg-birth-year').addEventListener('change',updateDayOptions);
+})();
+
+function updateDayOptions(){
+  const y=parseInt(document.getElementById('reg-birth-year').value)||new Date().getFullYear();
+  const m=parseInt(document.getElementById('reg-birth-month').value)||1;
+  const days=new Date(y,m,0).getDate();
+  const sel=document.getElementById('reg-birth-day');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">请选择</option>';
+  for(let d=1;d<=days;d++){const o=document.createElement('option');o.value=d;o.textContent=d+'日';sel.appendChild(o)}
+  if(cur&&parseInt(cur)<=days)sel.value=cur;
+}
+
+// ── Auth ──
+async function doLogin(){
+  const phone=document.getElementById('login-phone').value.trim();
+  const password=document.getElementById('login-password').value;
+  const err=document.getElementById('login-error');err.textContent='';
+  if(!phone||!password){err.textContent='请填写手机号和密码';return}
+  showLoading('登录中…');
+  try{const d=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({phone,password})});
+    token=d.token;currentUser={id:d.user_id,nickname:d.nickname,phone};
+    localStorage.setItem('yy_token',token);localStorage.setItem('yy_user',JSON.stringify(currentUser));
+    await afterLogin();
+  }catch(e){err.textContent=e.message}finally{hideLoading()}
+}
+async function doRegister(){
+  const nickname=document.getElementById('reg-nickname').value.trim();
+  const phone=document.getElementById('reg-phone').value.trim();
+  const password=document.getElementById('reg-password').value;
+  const birth_year=parseInt(document.getElementById('reg-birth-year').value)||0;
+  const birth_month=parseInt(document.getElementById('reg-birth-month').value)||0;
+  const birth_day=parseInt(document.getElementById('reg-birth-day').value)||null;
+  const birth_hour=document.getElementById('reg-birth-hour').value||null;
+  const gender=getChoice('gender')||null;
+  const self_desc=document.getElementById('reg-self-desc').value.trim()||null;
+  const invite_code=document.getElementById('reg-invite').value.trim().toUpperCase();
+  const err=document.getElementById('reg-error');err.textContent='';
+  if(!nickname){err.textContent='请填写昵称';return}
+  if(!phone||phone.length!==11){err.textContent='请输入11位手机号';return}
+  if(password.length<6){err.textContent='密码至少6位';return}
+  if(!birth_year){err.textContent='请选择出生年份';return}
+  if(!birth_month){err.textContent='请选择出生月份';return}
+  if(!birth_day){err.textContent='请选择出生日期';return}
+  if(!invite_code){err.textContent='请填写使用码';return}
+  showLoading('注册中…');
+  try{const d=await apiFetch('/api/auth/register',{method:'POST',body:JSON.stringify({phone,password,nickname,birth_year,birth_month,birth_day,birth_hour,gender,self_desc,invite_code})});
+    token=d.token;currentUser={id:d.user_id,nickname:d.nickname,phone};
+    localStorage.setItem('yy_token',token);localStorage.setItem('yy_user',JSON.stringify(currentUser));
+    await afterLogin();
+  }catch(e){err.textContent=e.message}finally{hideLoading()}
+}
+function doLogout(){if(!confirm('确定退出登录？'))return;token='';currentUser=null;localStorage.removeItem('yy_token');localStorage.removeItem('yy_user');showScreen('login')}
+
+async function afterLogin(){
+  await loadConvDates();
+  await openConv(todayStr());
+  showScreen('chat');
+}
+
+// ── Conversations ──
+async function loadConvDates(){
+  try{const d=await apiFetch('/api/conversations');convDates=d.map(x=>x.date||x)}catch(e){}
+}
+async function openConv(dateStr){
+  currentDate=dateStr;
+  const isToday=dateStr===todayStr();
+  document.getElementById('chat-date-display').textContent=isToday?'今天':fmtDate(dateStr);
+  document.getElementById('messages-area').innerHTML='';
+  showLoading('加载对话…');
+  try{
+    let conv;
+    const raw=isToday?await apiFetch('/api/conversations/today'):await apiFetch('/api/conversations/'+dateStr);
+    conv=raw.conversation||raw;
+    currentConvId=conv.id;
+    const msgs=raw.messages||conv.messages||[];
+    if(msgs.length===0){appendMsg('assistant','你好 👋\n\n今天有什么想记录的，或者想聊的？')}
+    else{msgs.forEach(m=>appendMsg(m.role,m.content,m.created_at))}
+    scrollBottom();
+  }catch(e){showToast('加载失败：'+e.message)}finally{hideLoading()}
+}
+
+// ── Chat ──
+function appendMsg(role,content,ts){
+  const area=document.getElementById('messages-area');
+  const row=document.createElement('div');row.className='msg-row '+role;
+  const time=ts?fmtTime(ts):fmtTime(new Date().toISOString());
+  row.innerHTML='<div><div class="msg-bubble">'+escHtml(content)+'</div><div class="msg-time">'+time+'</div></div>';
+  area.appendChild(row);return row;
+}
+function appendStreamMsg(){
+  const area=document.getElementById('messages-area');
+  const row=document.createElement('div');row.className='msg-row assistant';
+  const typing=document.createElement('div');typing.className='typing-indicator';
+  typing.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  row.appendChild(typing);area.appendChild(row);scrollBottom();
+  const bubble=document.createElement('div');bubble.className='msg-bubble';bubble.style.display='none';
+  const timeEl=document.createElement('div');timeEl.className='msg-time';timeEl.textContent=fmtTime(new Date().toISOString());
+  const wrap=document.createElement('div');wrap.appendChild(bubble);wrap.appendChild(timeEl);
+  return{row,startStream(){typing.remove();row.appendChild(wrap);bubble.style.display=''},append(t){bubble.textContent+=t;scrollBottom()}};
+}
+function scrollBottom(){const a=document.getElementById('messages-area');a.scrollTop=a.scrollHeight}
+
+async function sendMessage(){
+  if(isStreaming)return;
+  const ta=document.getElementById('chat-input');
+  const content=ta.value.trim();
+  if(!content||!currentConvId)return;
+  ta.value='';ta.style.height='';_speechExisting='';_speechFinal='';
+  document.getElementById('send-btn').disabled=true;isStreaming=true;
+  appendMsg('user',content);scrollBottom();
+  const sui=appendStreamMsg();
+  try{
+    const resp=await fetch(API+'/api/conversations/'+currentConvId+'/messages',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({content})
+    });
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));
+      const msg=e?.detail?.error||e?.detail||'发送失败';
+      sui.row.remove();
+      if(resp.status===429)appendMsg('assistant','😅 本月对话次数已用完，请兑换使用码继续使用');
+      else appendMsg('assistant','😕 '+msg);
+      return;
+    }
+    const reader=resp.body.getReader();const dec=new TextDecoder();
+    let started=false;let buf='';
+    while(true){const{done,value}=await reader.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data: '))continue;
+        let ev;try{ev=JSON.parse(line.slice(6))}catch{continue}
+        if(ev.type==='chunk'){if(!started){sui.startStream();started=true}sui.append(ev.content)}
+        else if(ev.type==='error'){if(!started)sui.startStream();sui.append('\n[错误：'+ev.error+']')}
+      }
+    }
+    if(!started)sui.startStream();
+  }catch(e){sui.row.remove();appendMsg('assistant','😕 网络错误，请重试')}
+  finally{isStreaming=false;document.getElementById('send-btn').disabled=false;scrollBottom()}
+}
+// ── Date Picker ──
+let dpYear=new Date().getFullYear();let dpMonth=new Date().getMonth()+1;
+function openDatePicker(){
+  dpYear=new Date().getFullYear();dpMonth=new Date().getMonth()+1;
+  renderDpCalendar();document.getElementById('date-picker-overlay').style.display='flex';
+}
+function closeDatePicker(e){if(!e||e.target===document.getElementById('date-picker-overlay'))document.getElementById('date-picker-overlay').style.display='none'}
+function dpPrevMonth(){dpMonth--;if(dpMonth<1){dpMonth=12;dpYear--}renderDpCalendar()}
+function dpNextMonth(){dpMonth++;if(dpMonth>12){dpMonth=1;dpYear++}renderDpCalendar()}
+function renderDpCalendar(){
+  document.getElementById('dp-month-label').textContent=dpYear+'年'+dpMonth+'月';
+  const container=document.getElementById('dp-days');container.innerHTML='';
+  const first=new Date(dpYear,dpMonth-1,1).getDay();
+  const days=new Date(dpYear,dpMonth,0).getDate();
+  const today=todayStr();
+  for(let i=0;i<first;i++){const d=document.createElement('div');container.appendChild(d)}
+  for(let d=1;d<=days;d++){
+    const dateStr=dpYear+'-'+String(dpMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const btn=document.createElement('button');
+    btn.textContent=d;btn.style.cssText='padding:8px 4px;border-radius:8px;border:none;font-size:13px;cursor:pointer;width:100%;text-align:center;';
+    const hasConv=convDates.includes(dateStr);
+    if(dateStr===today){btn.style.border='1.5px solid var(--gold)'}
+    if(hasConv){btn.style.background='#EAF0F6';btn.style.color='var(--primary)';btn.style.fontWeight='600'}
+    else{btn.style.background='var(--bg)';btn.style.color='var(--text2)'}
+    if(dateStr===currentDate){btn.style.background='var(--primary)';btn.style.color='#fff'}
+    btn.onclick=()=>{closeDatePicker();openConv(dateStr)};
+    container.appendChild(btn);
+  }
+}
+
+// ── Voice Recording ──
+function _setRecUI(rec){
+  const btn=document.getElementById('mic-btn');const bar=document.getElementById('recording-bar');
+  const ta=document.getElementById('chat-input');
+  btn.classList.toggle('recording',rec);bar.classList.toggle('active',rec);
+  ta.disabled=rec;if(!rec){ta.placeholder='随手写下你的想法…'}
+}
+function _startTimer(){recStartTime=Date.now();recTimerInterval=setInterval(()=>{
+  const el=(Date.now()-recStartTime)/1000;const pct=Math.min(el/MAX_REC_SECS,1);
+  document.getElementById('rec-timer').textContent=_fmt(el)+' / '+_fmt(MAX_REC_SECS);
+  document.getElementById('rec-progress').style.width=(pct*100)+'%';
+  if(el>=MAX_REC_SECS)stopRecording();
+},250)}
+function _stopTimer(){clearInterval(recTimerInterval);document.getElementById('rec-progress').style.width='0%'}
+function _fmt(s){const m=Math.floor(s/60);return m+':'+String(Math.floor(s%60)).padStart(2,'0')}
+function _finishRec(){isRecording=false;_setRecUI(false);_stopTimer()}
+
+async function toggleRecording(){
+  if(isRecording){stopRecording();return}
+  if(!window.MediaRecorder||!navigator.mediaDevices){showToast('您的浏览器不支持语音输入');return}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}
+  catch(e){showToast(e.name==='NotAllowedError'?'请允许麦克风权限':'无法访问麦克风');return}
+  const mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'';
+  try{mediaRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:{})}catch{mediaRecorder=new MediaRecorder(stream)}
+  recordedChunks=[];_recStream=stream;
+  mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)recordedChunks.push(e.data)};
+  mediaRecorder.onstop=async()=>{
+    if(_recStream){_recStream.getTracks().forEach(t=>t.stop());_recStream=null}
+    const mu=mediaRecorder.mimeType||'audio/webm';
+    const ext=mu.includes('mp4')?'mp4':mu.includes('ogg')?'ogg':'webm';
+    const blob=new Blob(recordedChunks,{type:mu});
+    if(blob.size<500){showToast('录音太短，请重试');return}
+    await transcribeAndFill(blob,ext);
+  };
+  // 先设状态和 UI，再 start，确保用户能看到录音状态
+  isRecording=true;_setRecUI(true);_startTimer();
+  mediaRecorder.start(200);
+}
+
+function stopRecording(){
+  if(!isRecording)return;
+  _finishRec();// 先重置状态和 UI
+  if(mediaRecorder&&mediaRecorder.state!=='inactive'){
+    mediaRecorder.stop();// onstop 异步回调会处理上传
+  }else{
+    if(_recStream){_recStream.getTracks().forEach(t=>t.stop());_recStream=null}
+  }
+}
+async function transcribeAndFill(blob,ext){
+  const tEl=document.getElementById('input-transcribing');if(tEl)tEl.style.display='flex';
+  document.getElementById('send-btn').disabled=true;
+  try{
+    const fd=new FormData();fd.append('audio',blob,'recording.'+ext);
+    const resp=await fetch('/api/transcribe',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));const d=e?.detail||{};
+      if(d?.no_asr||resp.status===503)showToast('🎤 语音识别暂不可用，请文字输入');
+      else showToast('❌ '+(d?.error||'转写失败'));return}
+    const data=await resp.json();const text=data?.data?.text||data?.text||'';
+    if(!text){showToast('未识别到语音，请重试');return}
+    const ta=document.getElementById('chat-input');
+    if(ta){ta.value=(ta.value.trim()?ta.value.trim()+'\n':'')+text;autoResize(ta);ta.focus()}
+    showToast('✅ 语音已转为文字');
+  }catch(e){showToast('转写失败：'+e.message)}
+  finally{if(tEl)tEl.style.display='none';document.getElementById('send-btn').disabled=false}
+}
+
+// ── Timeline ──
+let currentTlTab='daily';
+async function loadTimeline(tab){
+  currentTlTab=tab;
+  document.querySelectorAll('.tl-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  const list=document.getElementById('summary-list');list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">加载中…</div>';
+  // Show/hide emotion chart only for daily
+  document.getElementById('emotion-chart-wrap').style.display=tab==='daily'?'':'none';
+  try{
+    let data=[];const now=new Date();
+    let raw;
+    if(tab==='daily'){
+      [raw]=await Promise.all([
+        apiFetch('/api/summaries/daily?year='+now.getFullYear()+'&month='+(now.getMonth()+1)),
+        loadEmotionChart()
+      ]);
+    }else if(tab==='weekly')raw=await apiFetch('/api/summaries/weekly?year='+now.getFullYear());
+    else if(tab==='monthly')raw=await apiFetch('/api/summaries/monthly?year='+now.getFullYear());
+    else if(tab==='yearly')raw=await apiFetch('/api/summaries/yearly');
+    data=Array.isArray(raw)?raw:(raw&&raw.summaries?raw.summaries:[]);
+    if(!data||!data.length){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">暂无记录</div>';return}
+    list.innerHTML=data.slice().reverse().map((s,i)=>renderSummaryCard(s,tab,i)).join('');
+  }catch(e){
+    console.error('loadTimeline error:',e);
+    list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">加载失败：'+escHtml(e.message||String(e))+'</div>';
+  }
+}
+function switchTlTab(tab){loadTimeline(tab)}
+function emotionEmoji(score){const s=parseFloat(score||0);if(s>=1.5)return'😊';if(s>=0.5)return'🙂';if(s>=-0.5)return'😐';if(s>=-1.5)return'😕';return'😔'}
+function renderSummaryCard(s,tab,i){
+  const tags=parseTags(s.emotion_tags||s.topic_tags||s.theme_tags||s.milestone_tags||s.theme_words||'');
+  const dateLabel=tab==='daily'?fmtDate(s.date):tab==='weekly'?s.year+'年 第'+s.week+'周':tab==='monthly'?s.year+'年'+s.month+'月':s.year+'年度回顾';
+  const emo=emotionEmoji(s.emotion_score);
+  return '<div class="summary-card"><div class="summary-card-header"><span class="summary-date">'+dateLabel+'</span><span class="summary-emotion">'+emo+'</span></div>'+(tags.length?'<div class="summary-tags">'+tags.map(t=>'<span class="summary-tag">'+escHtml(t)+'</span>').join('')+'</div>':'')+'<div class="summary-content" id="sc-'+i+'">'+escHtml(s.content||'')+'</div><div class="summary-expand-btn" onclick="toggleSummary('+i+')">展开 ▾</div></div>';
+}
+function parseTags(v){if(!v)return[];try{const a=JSON.parse(v);return Array.isArray(a)?a:[]}catch{return v.split(/[,，]/).filter(Boolean)}}
+function toggleSummary(i){const el=document.getElementById('sc-'+i);const btn=el.nextElementSibling;if(el.classList.contains('expanded')){el.classList.remove('expanded');btn.textContent='展开 ▾'}else{el.classList.add('expanded');btn.textContent='收起 ▴'}}
+
+async function loadEmotionChart(){
+  try{
+    const raw2=await apiFetch('/api/summaries/emotion_trend?days=30');
+    const data=Array.isArray(raw2)?raw2:(raw2&&raw2.trend?raw2.trend:[]);
+    if(!data||!data.length)return;
+    drawEmotionChart(data);
+  }catch(e){console.warn('emotion chart error:',e)}
+}
+function drawEmotionChart(data){
+  const canvas=document.getElementById('emotionChart');if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const w=canvas.parentElement.clientWidth-32;const h=80;
+  canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+'px';canvas.style.height=h+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  const pts=data.slice(-30);const n=pts.length;if(n<2)return;
+  const pad=12;const cw=w-pad*2;const ch=h-pad*2;
+  // grid lines
+  ctx.strokeStyle='#ECEAE4';ctx.lineWidth=1;
+  for(let v=-2;v<=2;v++){const y=pad+(2-v)/(4)*ch;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke()}
+  // zero line bolder
+  ctx.strokeStyle='#D0CEC8';ctx.lineWidth=1.5;
+  const zy=pad+2/4*ch;ctx.beginPath();ctx.moveTo(pad,zy);ctx.lineTo(w-pad,zy);ctx.stroke();
+  // gradient fill
+  const grad=ctx.createLinearGradient(0,pad,0,pad+ch);grad.addColorStop(0,'rgba(232,201,126,0.3)');grad.addColorStop(1,'rgba(232,201,126,0)');
+  ctx.beginPath();
+  pts.forEach((p,i)=>{const x=pad+i/(n-1)*cw;const y=pad+(2-(p.emotion_score||0))/(4)*ch;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+  ctx.lineTo(pad+cw,pad+ch);ctx.lineTo(pad,pad+ch);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  // line
+  ctx.beginPath();ctx.strokeStyle='#E8C97E';ctx.lineWidth=2;ctx.lineJoin='round';
+  pts.forEach((p,i)=>{const x=pad+i/(n-1)*cw;const y=pad+(2-(p.emotion_score||0))/(4)*ch;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+  ctx.stroke();
+  // dots
+  pts.forEach((p,i)=>{const x=pad+i/(n-1)*cw;const y=pad+(2-(p.emotion_score||0))/(4)*ch;ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle='#E8C97E';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke()});
+}
+
+// ── Profile ──
+async function loadProfile(){
+  if(!currentUser)return;
+  document.getElementById('profile-name').textContent=currentUser.nickname||'—';
+  document.getElementById('profile-phone').textContent=maskPhone(currentUser.phone||'');
+  try{
+    const me=await apiFetch('/api/me');
+    document.getElementById('profile-birth').textContent=(me.birth_year||'')+'年'+(me.birth_month||'')+'月'+(me.birth_day?me.birth_day+'日':'');
+    if(me.birth_hour){document.getElementById('profile-birth-hour').textContent=me.birth_hour;document.getElementById('profile-birth-hour-row').style.display=''}
+    if(me.self_desc){document.getElementById('profile-self-desc').textContent=me.self_desc;document.getElementById('profile-self-desc-row').style.display=''}
+    const sub=await apiFetch('/api/me/subscription');
+    const isPro=sub.plan==='pro';
+    document.getElementById('sub-plan-text').innerHTML='<span class="sub-badge '+(isPro?'pro':'free')+'">'+(isPro?'✨ Pro':'免费版')+'</span>';
+    document.getElementById('sub-usage-text').textContent=(isPro&&sub.expire_at)?'到期：'+new Date(sub.expire_at).toLocaleDateString('zh-CN'):(sub.this_month_count||0)+' / '+(sub.monthly_limit||20)+' 次';
+  }catch(e){}
+}
+async function doActivate(){
+  const code=document.getElementById('activate-input').value.trim().toUpperCase();
+  if(!code){showToast('请输入使用码');return}
+  showLoading('兑换中…');
+  try{const d=await apiFetch('/api/me/activate',{method:'POST',body:JSON.stringify({code})});
+    showToast('🎉 激活成功！到期：'+new Date(d.expire_at).toLocaleDateString('zh-CN'));
+    document.getElementById('activate-input').value='';loadProfile();
+  }catch(e){showToast('❌ '+e.message)}finally{hideLoading()}
+}
+
+// ── Boot ──
+(async function init(){
+  if(token&&currentUser){showLoading('加载中…');try{await afterLogin()}catch(e){token='';localStorage.removeItem('yy_token');showScreen('login')}finally{hideLoading()}}
+  else{showScreen('login')}
+})();
+</script>
+</body>
+</html>
