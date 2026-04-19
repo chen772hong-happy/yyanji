@@ -1,0 +1,40 @@
+# Data
+data/
+*.db
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Backend secrets
+config*.json
+secrets*.json
+
+# Database and logs (already in data/)
+backend/data/
