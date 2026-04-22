@@ -274,7 +274,6 @@ def _migrate(cursor):
 def _seed_data(conn: sqlite3.Connection):
     """插入初始数据（幂等）"""
     from passlib.context import CryptContext
-    import json
 
     pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
     now = datetime.utcnow().isoformat()
@@ -288,28 +287,6 @@ def _seed_data(conn: sqlite3.Connection):
             ("admin", pwd_ctx.hash("admin2026"), now),
         )
         logger.info("Admin user created: admin / admin2026")
-
-    # LLM 配置
-    api_key = "e0ecd249-6fde-4663-bb00-480d8e813628"
-    base_url = "https://ark.cn-beijing.volces.com/api/v3"
-    model = "doubao-seed-2-0-pro-260215"
-    for use_for in ("chat", "summary", "portrait"):
-        cur.execute("SELECT id FROM llm_configs WHERE use_for=? AND is_active=1", (use_for,))
-        if not cur.fetchone():
-            cur.execute(
-                """INSERT INTO llm_configs
-                   (use_for, provider, model_name, api_key, base_url, is_active, notes, created_at, updated_at)
-                   VALUES (?,?,?,?,?,1,?,?,?)""",
-                (use_for, "openai_compat", model, api_key, base_url, f"默认{use_for}配置", now, now),
-            )
-    logger.info("LLM configs seeded")
-
-    # STT 配置
-    cur.execute("SELECT id FROM stt_configs WHERE provider='faster-whisper' AND is_active=1")
-    if not cur.fetchone():
-        cur.execute(
-            """INSERT INTO stt_configs (provider, model_name, is_active, notes, created_at)
-               VALUES (?,?,1,?,?)""",
-            ("faster-whisper", "small", "本地 CPU STT", now),
-        )
+    
+    # 注意：LLM 和 STT 配置不再自动插入，请通过后台管理界面配置
     conn.commit()
