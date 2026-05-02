@@ -1,8 +1,12 @@
 # Data
 data/
+backups/
+backup_*/
 *.db
 *.log
 logs/
+*.bak
+*.backup.*
 
 # Python
 __pycache__/
@@ -35,6 +39,10 @@ temp/
 # Backend secrets
 config*.json
 secrets*.json
+.env
+.env.local
+.env.*.local
 
 # Database and logs (already in data/)
 backend/data/
+backend/test_*.py

@@ -114,7 +114,7 @@
     .tl-tab{flex:1;padding:8px;text-align:center;color:rgba(255,255,255,0.6);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s}
     .tl-tab.active{background:var(--gold);color:var(--primary);font-weight:700}
     .timeline-body{flex:1;overflow-y:auto;padding:16px 12px}
-    .emotion-chart-wrap{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+    
     .emotion-chart-title{font-size:13px;color:var(--text2);margin-bottom:10px;font-weight:500}
     canvas#emotionChart{width:100%;height:80px;display:block}
     .summary-card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border-left:3px solid var(--gold)}
@@ -154,7 +154,193 @@
     .loading-spinner{width:36px;height:36px;border:3px solid #E0DDD5;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
     .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,30,40,.88);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  </style>
+  
+/* 智能总结按钮样式 */
+.chat-header .header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.chat-header .header-right-btn {
+    font-size: 22px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.8);
+    padding: 2px 4px;
+    transition: color 0.2s, transform 0.1s;
+}
+.chat-header .header-right-btn:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
+.chat-header .header-right-btn:active {
+    transform: scale(0.95);
+}
+#intelligent-summary-btn.loading {
+    animation: intelligent-spin 1s linear infinite;
+    opacity: 0.7;
+}
+@keyframes intelligent-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 智能总结模态框 */
+.intelligent-summary-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.intelligent-summary-overlay.active {
+    display: flex;
+}
+.intelligent-summary-modal {
+    background: var(--white);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+.intelligent-summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: var(--primary);
+    color: #fff;
+}
+.intelligent-summary-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+}
+.intelligent-summary-header .close-btn {
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 8px;
+}
+.intelligent-summary-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+.intelligent-summary-loading {
+    text-align: center;
+    padding: 40px 20px;
+}
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid #f0f0f0;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: intelligent-spin 1s linear infinite;
+}
+.intelligent-summary-loading p {
+    color: var(--text);
+    font-size: 16px;
+    margin: 8px 0;
+}
+.intelligent-summary-loading .loading-sub {
+    color: var(--text2);
+    font-size: 14px;
+}
+.intelligent-summary-result {
+    color: var(--text);
+}
+.intelligent-summary-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.intelligent-summary-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+.intelligent-summary-section h3 {
+    font-size: 18px;
+    color: var(--primary);
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.intelligent-summary-section h3::before {
+    content: "•";
+    color: var(--gold);
+}
+.intelligent-summary-section p {
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 8px 0;
+}
+.intelligent-summary-trait {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+}
+.intelligent-summary-trait h4 {
+    font-size: 16px;
+    margin: 0 0 8px 0;
+    color: var(--text);
+}
+.intelligent-summary-trait p {
+    font-size: 14px;
+    color: var(--text2);
+    margin: 4px 0;
+}
+.intelligent-summary-error, .intelligent-summary-insufficient {
+    text-align: center;
+    padding: 40px 20px;
+}
+.intelligent-summary-error p, .intelligent-summary-insufficient p {
+    font-size: 16px;
+    margin: 12px 0;
+    color: var(--text);
+}
+.intelligent-summary-error button, .intelligent-summary-insufficient button {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 24px;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 16px;
+}
+
+
+.timeline-intelligent-btn {
+    font-size: 22px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.8);
+    padding: 2px 4px;
+    margin-left: 8px;
+    transition: color 0.2s, transform 0.1s;
+}
+.timeline-intelligent-btn:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
+.timeline-intelligent-btn:active {
+    transform: scale(0.95);
+}
+.timeline-intelligent-btn.loading {
+    animation: intelligent-spin 1s linear infinite;
+    opacity: 0.7;
+}
+</style>
 </head>
 <body>
 <div id="app">
@@ -246,7 +432,7 @@
   <div class="chat-header">
     <span class="header-left" onclick="showScreen('timeline')">📊</span>
     <span class="header-date" id="chat-date-display" onclick="openDatePicker()">今天</span>
-    <span class="header-right" onclick="showScreen('profile')">👤</span>
+    <div class="header-right-group"> <span class="header-right-btn" onclick="showScreen('profile')" title="个人资料">👤</span> </div>
   </div>
   <div class="messages-area" id="messages-area"></div>
   <div class="recording-bar" id="recording-bar">
@@ -286,6 +472,33 @@
       <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">五</div>
       <div style="text-align:center;font-size:12px;color:var(--text2);padding:4px">六</div>
     </div>
+<!-- 智能总结模态框 -->
+<div class="intelligent-summary-overlay" id="intelligent-summary-overlay" onclick="closeIntelligentSummary(event)">
+  <div class="intelligent-summary-modal" onclick="event.stopPropagation()">
+    <div class="intelligent-summary-header">
+      <h2>💡 智能总结</h2>
+      <span class="close-btn" onclick="closeIntelligentSummary()">×</span>
+    </div>
+    <div class="intelligent-summary-content" id="intelligent-summary-content">
+      <div class="intelligent-summary-loading" id="intelligent-summary-loading">
+        <div class="loading-spinner"></div>
+        <p>正在分析您的对话记录和摘要...</p>
+        <p class="loading-sub">从心理学和哲学角度进行深度分析，请稍候</p>
+      </div>
+      <div class="intelligent-summary-result" id="intelligent-summary-result" style="display: none;"></div>
+      <div class="intelligent-summary-error" id="intelligent-summary-error" style="display: none;">
+        <p>❌ 分析失败</p>
+        <p id="intelligent-summary-error-msg"></p>
+        <button onclick="openIntelligentSummary()">重试</button>
+      </div>
+      <div class="intelligent-summary-insufficient" id="intelligent-summary-insufficient" style="display: none;">
+        <p>📊 数据不足</p>
+        <p id="intelligent-summary-insufficient-msg"></p>
+        <p>建议积累更多对话记录后再试。</p>
+      </div>
+    </div>
+  </div>
+</div>
     <div id="dp-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
     <button onclick="closeDatePicker()" style="width:100%;margin-top:16px;padding:12px;border:none;background:var(--bg);border-radius:10px;font-size:15px;cursor:pointer;color:var(--text2)">取消</button>
   </div>
@@ -295,8 +508,7 @@
   <div class="timeline-header">
     <div class="timeline-header-row">
       <span class="timeline-back" onclick="showScreen('chat')">←</span>
-      <span class="timeline-title">成长轨迹</span>
-      <span style="width:28px"></span>
+      <span class="timeline-title">成长轨迹</span><span class="timeline-intelligent-btn" id="timeline-intelligent-btn" onclick="openIntelligentSummary()" title="智能总结">💡</span>
     </div>
     <div class="timeline-tabs">
       <div class="tl-tab active" data-tab="daily" onclick="switchTlTab('daily')">日</div>
@@ -306,10 +518,7 @@
     </div>
   </div>
   <div class="timeline-body" id="timeline-body">
-    <div class="emotion-chart-wrap" id="emotion-chart-wrap">
-      <div class="emotion-chart-title">近30天情绪趋势</div>
-      <canvas id="emotionChart"></canvas>
-    </div>
+    
     <div id="summary-list"></div>
   </div>
 </div>
@@ -671,21 +880,21 @@ async function loadTimeline(tab){
   document.querySelectorAll('.tl-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
   const list=document.getElementById('summary-list');list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">加载中…</div>';
   // Show/hide emotion chart only for daily
-  document.getElementById('emotion-chart-wrap').style.display=tab==='daily'?'':'none';
+  
   try{
     let data=[];const now=new Date();
     let raw;
     if(tab==='daily'){
       [raw]=await Promise.all([
         apiFetch('/api/summaries/daily?year='+now.getFullYear()+'&month='+(now.getMonth()+1)),
-        loadEmotionChart()
+        Promise.resolve()
       ]);
     }else if(tab==='weekly')raw=await apiFetch('/api/summaries/weekly?year='+now.getFullYear());
     else if(tab==='monthly')raw=await apiFetch('/api/summaries/monthly?year='+now.getFullYear());
     else if(tab==='yearly')raw=await apiFetch('/api/summaries/yearly');
     data=Array.isArray(raw)?raw:(raw&&raw.summaries?raw.summaries:[]);
     if(!data||!data.length){list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">暂无记录</div>';return}
-    list.innerHTML=data.slice().reverse().map((s,i)=>renderSummaryCard(s,tab,i)).join('');
+    list.innerHTML=data.map((s,i)=>renderSummaryCard(s,tab,i)).join('');
   }catch(e){
     console.error('loadTimeline error:',e);
     list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">加载失败：'+escHtml(e.message||String(e))+'</div>';
@@ -764,6 +973,286 @@ async function doActivate(){
 }
 
 // ── Boot ──
+
+// 智能总结功能
+let isGeneratingIntelligentSummary = false;
+
+function openIntelligentSummary() {
+    // 智能总结功能
+    const btn = document.getElementById('timeline-intelligent-btn');
+    if (!btn) {
+        // 如果不在成长轨迹页面，切换到成长轨迹页面
+        showScreen('timeline');
+        // 稍后重试
+        setTimeout(openIntelligentSummary, 100);
+        return;
+    }
+    
+    if (btn.classList.contains('loading')) return;
+    
+    // 检查数据是否充足
+    showLoading('检查数据...');
+    apiFetch('/api/summaries/intelligent/status')
+        .then(status => {
+            hideLoading();
+            if (!status.data_sufficient) {
+                alert('数据不足：当前仅有 ' + status.daily_summaries_count + ' 天记录，需要至少 ' + status.minimum_required + ' 天记录才能生成深度分析。');
+                return;
+            }
+            
+            btn.classList.add('loading');
+            
+            // 开始生成智能总结
+            apiFetch('/api/summaries/intelligent', { method: 'POST' })
+                .then(result => {
+                    btn.classList.remove('loading');
+                    // 在成长轨迹页面显示结果
+                    displayIntelligentSummaryInTimeline(result);
+                })
+                .catch(error => {
+                    btn.classList.remove('loading');
+                    alert('智能总结生成失败：' + (error.message || '未知错误'));
+                });
+        })
+        .catch(error => {
+            hideLoading();
+            alert('检查数据失败：' + (error.message || '未知错误'));
+        });
+}
+
+function displayIntelligentSummaryInTimeline(result) {
+    const timelineBody = document.getElementById('timeline-body');
+    if (!timelineBody) return;
+    
+    // 构建简单的智能总结显示
+    let html = '<div class="intelligent-summary-timeline" style="background: var(--white); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-md); border-left: 4px solid var(--primary);">';
+    html += '<h3 style="margin: 0 0 12px 0; color: var(--primary);">💡 智能总结</h3>';
+    
+    const summary = result.intelligent_summary || {};
+    if (summary.core_personality) {
+        html += '<p style="margin: 8px 0; font-size: 15px; line-height: 1.6;"><strong>核心人格特征：</strong>' + escapeHtml(summary.core_personality) + '</p>';
+    }
+    
+    if (summary.growth_journey) {
+        html += '<p style="margin: 8px 0; font-size: 15px; line-height: 1.6;"><strong>成长轨迹：</strong>' + escapeHtml(summary.growth_journey) + '</p>';
+    }
+    
+    // 心理学分析摘要
+    const psychology = result.psychology_analysis || {};
+    if (psychology.personality_traits) {
+        html += '<p style="margin: 8px 0; font-size: 15px; line-height: 1.6;"><strong>心理学分析：</strong>';
+        const traits = psychology.personality_traits;
+        const traitNames = {
+            'openness': '开放性',
+            'conscientiousness': '尽责性', 
+            'extraversion': '外向性',
+            'agreeableness': '宜人性',
+            'neuroticism': '神经质'
+        };
+        
+        let traitsText = [];
+        for (const [key, trait] of Object.entries(traits)) {
+            if (trait && trait.score !== undefined) {
+                const name = traitNames[key] || key;
+                const score = (trait.score || 0) * 10;
+                traitsText.push(name + ' ' + score.toFixed(1) + '/10');
+            }
+        }
+        
+        if (traitsText.length > 0) {
+            html += traitsText.join('， ');
+        }
+        html += '</p>';
+    }
+    
+    html += '<p style="margin: 8px 0; font-size: 14px; color: var(--text2);">分析时间：' + (result.generated_at || '刚刚') + '</p>';
+    html += '</div>';
+    
+    // 移除已有的智能总结
+    const existing = timelineBody.querySelector('.intelligent-summary-timeline');
+    if (existing) {
+        existing.remove();
+    }
+    
+    // 插入到成长轨迹内容之前
+    const summaryList = document.getElementById('summary-list');
+    if (summaryList) {
+        timelineBody.insertBefore(createElementFromHTML(html), summaryList);
+    } else {
+        timelineBody.insertAdjacentHTML('afterbegin', html);
+    }
+    
+    // 滚动到顶部
+    timelineBody.scrollTop = 0;
+}
+
+function createElementFromHTML(htmlString) {
+    const div = document.createElement('div');
+    div.innerHTML = htmlString.trim();
+    return div.firstChild;
+}
+
+function closeIntelligentSummary(event) {
+    if (event && event.target !== document.getElementById('intelligent-summary-overlay')) {
+        return;
+    }
+    document.getElementById('intelligent-summary-overlay').classList.remove('active');
+    const btn = document.getElementById('intelligent-summary-btn');
+    btn.classList.remove('loading');
+    isGeneratingIntelligentSummary = false;
+}
+
+function showInsufficientData(status) {
+    document.getElementById('intelligent-summary-overlay').classList.add('active');
+    document.getElementById('intelligent-summary-loading').style.display = 'none';
+    document.getElementById('intelligent-summary-result').style.display = 'none';
+    document.getElementById('intelligent-summary-error').style.display = 'none';
+    document.getElementById('intelligent-summary-insufficient').style.display = 'block';
+    
+    const msg = "当前仅有 " + status.daily_summaries_count + " 天记录，需要至少 " + status.minimum_required + " 天记录才能生成深度分析。";
+    document.getElementById('intelligent-summary-insufficient-msg').textContent = msg;
+}
+
+function showIntelligentSummaryError(error) {
+    document.getElementById('intelligent-summary-overlay').classList.add('active');
+    document.getElementById('intelligent-summary-loading').style.display = 'none';
+    document.getElementById('intelligent-summary-result').style.display = 'none';
+    document.getElementById('intelligent-summary-error').style.display = 'block';
+    document.getElementById('intelligent-summary-insufficient').style.display = 'none';
+    
+    const errorMsg = error.message || '分析过程中出现错误，请稍后重试。';
+    document.getElementById('intelligent-summary-error-msg').textContent = errorMsg;
+}
+
+function displayIntelligentSummary(result) {
+    document.getElementById('intelligent-summary-loading').style.display = 'none';
+    document.getElementById('intelligent-summary-result').style.display = 'block';
+    document.getElementById('intelligent-summary-error').style.display = 'none';
+    document.getElementById('intelligent-summary-insufficient').style.display = 'none';
+    
+    const contentEl = document.getElementById('intelligent-summary-result');
+    
+    // 构建HTML内容
+    let html = '';
+    
+    // 用户信息
+    const userInfo = result.user_data_preview || {};
+    html += '<div class="intelligent-summary-section">';
+    html += '<h3>👤 用户概况</h3>';
+    html += '<p>昵称：' + escapeHtml(userInfo.nickname || '用户') + '</p>';
+    html += '<p>分析周期：' + escapeHtml(userInfo.analysis_period || '最近90天') + '</p>';
+    html += '<p>分析数据：基于 ' + escapeHtml(userInfo.summary_count || 0) + ' 天对话记录</p>';
+    html += '</div>';
+    
+    // 核心人格特征
+    const summary = result.intelligent_summary || {};
+    if (summary.core_personality) {
+        html += '<div class="intelligent-summary-section">';
+        html += '<h3>🎭 核心人格特征</h3>';
+        html += '<p>' + escapeHtml(summary.core_personality) + '</p>';
+        html += '</div>';
+    }
+    
+    // 成长轨迹
+    if (summary.growth_journey) {
+        html += '<div class="intelligent-summary-section">';
+        html += '<h3>📈 成长轨迹</h3>';
+        html += '<p>' + escapeHtml(summary.growth_journey) + '</p>';
+        html += '</div>';
+    }
+    
+    // 心理学分析
+    const psychology = result.psychology_analysis || {};
+    if (psychology.personality_traits) {
+        html += '<div class="intelligent-summary-section">';
+        html += '<h3>🧪 心理学分析（大五人格）</h3>';
+        
+        const traits = psychology.personality_traits;
+        const traitNames = {
+            'openness': '开放性',
+            'conscientiousness': '尽责性', 
+            'extraversion': '外向性',
+            'agreeableness': '宜人性',
+            'neuroticism': '神经质'
+        };
+        
+        for (const [key, trait] of Object.entries(traits)) {
+            if (trait && trait.score !== undefined) {
+                const name = traitNames[key] || key;
+                const score = trait.score || 0;
+                const description = trait.description || '';
+                const evidence = trait.evidence || [];
+                
+                // 创建进度条
+                const progressWidth = Math.min(Math.max(score * 50, 0), 100);
+                const progressColor = score >= 0.7 ? '#4CAF50' : score >= 0.4 ? '#FFC107' : '#F44336';
+                
+                html += '<div class="intelligent-summary-trait">';
+                html += '<h4>' + escapeHtml(name) + ' (' + (score * 10).toFixed(1) + '/10)</h4>';
+                html += '<div style="background: #e0e0e0; height: 6px; border-radius: 3px; margin: 8px 0;">';
+                html += '<div style="width: ' + progressWidth + '%; height: 100%; background: ' + progressColor + '; border-radius: 3px;"></div>';
+                html += '</div>';
+                html += '<p>' + escapeHtml(description) + '</p>';
+                
+                if (evidence.length > 0) {
+                    html += '<p><strong>依据：</strong>' + escapeHtml(evidence.slice(0, 2).join('，')) + '</p>';
+                }
+                
+                html += '</div>';
+            }
+        }
+        
+        html += '</div>';
+    }
+    
+    // 深度洞察
+    if (summary.deep_insights && summary.deep_insights.length > 0) {
+        html += '<div class="intelligent-summary-section">';
+        html += '<h3>💡 深度洞察</h3>';
+        
+        summary.deep_insights.forEach(insight => {
+            html += '<p>• ' + escapeHtml(insight) + '</p>';
+        });
+        
+        html += '</div>';
+    }
+    
+    // 个性化建议
+    if (summary.personalized_advice && summary.personalized_advice.length > 0) {
+        html += '<div class="intelligent-summary-section">';
+        html += '<h3>🎯 个性化建议</h3>';
+        
+        summary.personalized_advice.forEach((advice, index) => {
+            html += '<div class="intelligent-summary-trait">';
+            html += '<h4>建议 ' + (index + 1) + '</h4>';
+            html += '<p>' + escapeHtml(advice) + '</p>';
+            html += '</div>';
+        });
+        
+        html += '</div>';
+    }
+    
+    // 完整总结文本
+    if (summary.summary_text) {
+        html += '<div class="intelligent-summary-section">';
+        html += '<h3>📝 完整总结</h3>';
+        html += '<p style="white-space: pre-wrap; line-height: 1.8;">' + escapeHtml(summary.summary_text) + '</p>';
+        html += '</div>';
+    }
+    
+    contentEl.innerHTML = html;
+    
+    // 滚动到顶部
+    contentEl.scrollTop = 0;
+}
+
+// 辅助函数：HTML转义
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 (async function init(){
   if(token&&currentUser){showLoading('加载中…');try{await afterLogin()}catch(e){token='';localStorage.removeItem('yy_token');showScreen('login')}finally{hideLoading()}}
   else{showScreen('login')}

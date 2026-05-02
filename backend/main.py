@@ -42,9 +42,11 @@ from memory_service import (
     run_monthly_summaries,
     run_weekly_summaries,
     run_yearly_summaries,
-)
+    )
 from rag_service import build_system_prompt
 from stt_service import transcribe_audio
+from backup_service import run_daily_backup, run_monthly_backup
+from optimization_service import run_weekly_optimization, run_daily_maintenance
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -62,16 +64,29 @@ async def lifespan(app: FastAPI):
     # APScheduler
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     scheduler = AsyncIOScheduler()
-    # 每天凌晨 02:00 日摘要
-    scheduler.add_job(run_daily_summaries, "cron", hour=2, minute=0)
-    # 每周一 02:30 周摘要
-    scheduler.add_job(run_weekly_summaries, "cron", day_of_week="mon", hour=2, minute=30)
-    # 每月2日 03:00 月摘要
-    scheduler.add_job(run_monthly_summaries, "cron", day=2, hour=3, minute=0)
-    # 每年1月2日 04:00 年度回顾
-    scheduler.add_job(run_yearly_summaries, "cron", month=1, day=2, hour=4, minute=0)
+    # 每天凌晨 01:30 日摘要（在1-3点窗口内）
+    scheduler.add_job(run_daily_summaries, "cron", hour=1, minute=30)
+    # 每周一 02:00 周摘要（在1-3点窗口内）
+    scheduler.add_job(run_weekly_summaries, "cron", day_of_week="mon", hour=2, minute=0)
+    # 每月2日 02:30 月摘要（在1-3点窗口内）
+    scheduler.add_job(run_monthly_summaries, "cron", day=2, hour=2, minute=30)
+    # 每年1月2日 02:45 年度回顾（在1-3点窗口内）
+    scheduler.add_job(run_yearly_summaries, "cron", month=1, day=2, hour=2, minute=45)
+    
+    # 数据库备份任务
+    # 每天凌晨 02:50 每日备份（摘要任务完成后）
+    scheduler.add_job(run_daily_backup, "cron", hour=2, minute=50)
+    # 每月1日 02:55 每月备份
+    scheduler.add_job(run_monthly_backup, "cron", day=1, hour=2, minute=55)
+    
+    # 系统优化任务
+    # 每天凌晨 03:10 每日维护
+    scheduler.add_job(run_daily_maintenance, "cron", hour=3, minute=10)
+    # 每周日 03:30 每周优化
+    scheduler.add_job(run_weekly_optimization, "cron", day_of_week="sun", hour=3, minute=30)
+    
     scheduler.start()
-    logger.info("Scheduler started")
+    logger.info("Scheduler started - 所有任务安排在凌晨1-4点之间")
     yield
     scheduler.shutdown()
 
@@ -156,7 +171,7 @@ class GenerateCodesReq(BaseModel):
 
 
 class LLMConfigReq(BaseModel):
-    use_for: str
+    use_for: str = "global"  # 保留字段用于兼容，固定值
     provider: str = "openai_compat"
     model_name: str
     api_key: str
@@ -407,7 +422,7 @@ async def send_message(conv_id: int, req: SendMessageReq, user=Depends(get_curre
 
     async def generate():
         ai_content = []
-        async for chunk in chat_stream(messages, use_for="chat", user_id=user["id"]):
+        async for chunk in chat_stream(messages, user_id=user["id"]):
             ai_content.append(chunk)
             yield f"data: {json.dumps({'type': 'chunk', 'content': chunk}, ensure_ascii=False)}\n\n"
 
@@ -527,6 +542,77 @@ async def get_emotion_trend(days: int = 30, user=Depends(get_current_user)):
             (user["id"], since),
         ).fetchall()
     return {"trend": [dict(r) for r in rows]}
+
+
+@app.get("/api/summaries/current-week")
+async def get_current_week_summaries(user=Depends(get_current_user)):
+    """获取本周的每天摘要"""
+    now = _now_cst()
+    # 计算本周的开始（周一）和结束（周日）
+    today = now.date()
+    week_start = today - timedelta(days=today.weekday())  # 周一
+    week_end = week_start + timedelta(days=6)  # 周日
+    
+    with get_db() as conn:
+        rows = conn.execute(
+            """SELECT * FROM daily_summaries 
+               WHERE user_id=? AND date BETWEEN ? AND ?
+               ORDER BY date DESC""",
+            (user["id"], week_start.isoformat(), week_end.isoformat()),
+        ).fetchall()
+    return {"summaries": [dict(r) for r in rows], "week_start": week_start.isoformat(), "week_end": week_end.isoformat()}
+
+
+@app.get("/api/summaries/current-month-weekly")
+async def get_current_month_weekly_summaries(user=Depends(get_current_user)):
+    """获取本月的每周摘要"""
+    now = _now_cst()
+    current_year = now.year
+    current_month = now.month
+    
+    with get_db() as conn:
+        # 获取当前年份的所有周摘要，然后筛选出属于当前月的
+        rows = conn.execute(
+            "SELECT * FROM weekly_summaries WHERE user_id=? AND year=? ORDER BY week DESC",
+            (user["id"], current_year),
+        ).fetchall()
+    
+    # 过滤出属于当前月的周摘要
+    import datetime as dt
+    import calendar
+    
+    # 获取当前月的日期范围
+    _, last_day = calendar.monthrange(current_year, current_month)
+    month_start = date(current_year, current_month, 1)
+    month_end = date(current_year, current_month, last_day)
+    
+    monthly_weeklies = []
+    for row in rows:
+        # 计算该周的开始日期（ISO周，周一开始）
+        week_start = dt.date.fromisocalendar(current_year, row["week"], 1)
+        week_end = week_start + timedelta(days=6)
+        
+        # 检查该周是否与当前月有重叠
+        if week_start <= month_end and week_end >= month_start:
+            row_dict = dict(row)
+            row_dict["week_start"] = week_start.isoformat()
+            row_dict["week_end"] = week_end.isoformat()
+            monthly_weeklies.append(row_dict)
+    
+    return {"summaries": monthly_weeklies, "month": current_month, "year": current_year}
+
+
+@app.get("/api/summaries/current-year-monthly")
+async def get_current_year_monthly_summaries(user=Depends(get_current_user)):
+    """获取本年度的每月摘要"""
+    current_year = _now_cst().year
+    
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM monthly_summaries WHERE user_id=? AND year=? ORDER BY month DESC",
+            (user["id"], current_year),
+        ).fetchall()
+    return {"summaries": [dict(r) for r in rows], "year": current_year}
 
 
 # ══════════════════════════════════════════════
@@ -713,6 +799,10 @@ async def admin_list_llm(admin=Depends(get_current_admin)):
 async def admin_create_llm(req: LLMConfigReq, admin=Depends(get_current_admin)):
     now = _now_cst().isoformat()
     with get_db() as conn:
+        # 如果激活新配置，先停用所有其他配置
+        if req.is_active == 1:
+            conn.execute("UPDATE llm_configs SET is_active=0 WHERE is_active=1")
+        
         cur = conn.execute(
             """INSERT INTO llm_configs (use_for, provider, model_name, api_key, base_url, is_active, notes, created_at, updated_at)
                VALUES (?,?,?,?,?,?,?,?,?)""",
@@ -726,6 +816,10 @@ async def admin_create_llm(req: LLMConfigReq, admin=Depends(get_current_admin)):
 async def admin_update_llm(config_id: int, req: LLMConfigReq, admin=Depends(get_current_admin)):
     now = _now_cst().isoformat()
     with get_db() as conn:
+        # 如果激活此配置，先停用所有其他配置
+        if req.is_active == 1:
+            conn.execute("UPDATE llm_configs SET is_active=0 WHERE is_active=1 AND id != ?", (config_id,))
+        
         conn.execute(
             """UPDATE llm_configs SET use_for=?, provider=?, model_name=?, api_key=?,
                base_url=?, is_active=?, notes=?, updated_at=?
@@ -801,11 +895,11 @@ async def admin_stats(admin=Depends(get_current_admin)):
             "SELECT COALESCE(SUM(duration_seconds),0) as t FROM stt_call_logs WHERE created_at >= ?",
             (today,),
         ).fetchone()["t"]
-        # 按模型统计
+        # 按模型统计（不分用途）
         model_stats = conn.execute(
-            """SELECT model_name, use_for,
+            """SELECT model_name,
                SUM(input_tokens) as input_t, SUM(output_tokens) as output_t, COUNT(*) as calls
-               FROM llm_call_logs GROUP BY model_name, use_for"""
+               FROM llm_call_logs GROUP BY model_name"""
         ).fetchall()
     return {
         "total_users": total_users,
@@ -816,6 +910,49 @@ async def admin_stats(admin=Depends(get_current_admin)):
         "stt_seconds_today": round(stt_today, 1),
         "model_stats": [dict(r) for r in model_stats],
     }
+
+
+# ── 系统优化管理 ────────────────────────────
+
+@app.get("/api/admin/system/health")
+async def admin_system_health(admin=Depends(get_current_admin)):
+    """获取系统健康报告"""
+    from optimization_service import system_optimizer
+    health_report = system_optimizer.check_system_health()
+    return health_report
+
+
+@app.post("/api/admin/system/optimize")
+async def admin_optimize_database(admin=Depends(get_current_admin)):
+    """手动触发数据库优化"""
+    from optimization_service import system_optimizer
+    optimization_report = system_optimizer.optimize_database()
+    return {
+        "success": True,
+        "report": optimization_report
+    }
+
+
+@app.post("/api/admin/system/cleanup")
+async def admin_cleanup_data(
+    days_to_keep: int = 365,
+    admin=Depends(get_current_admin)
+):
+    """手动触发数据清理"""
+    from optimization_service import system_optimizer
+    cleanup_report = system_optimizer.cleanup_old_data(days_to_keep=days_to_keep)
+    return {
+        "success": True,
+        "report": cleanup_report
+    }
+
+
+@app.get("/api/admin/system/performance")
+async def admin_system_performance(admin=Depends(get_current_admin)):
+    """获取系统性能报告"""
+    from optimization_service import system_optimizer
+    performance_report = system_optimizer.generate_performance_report()
+    return performance_report
 
 
 # ── 摘要质检 ──────────────────────────────
@@ -853,6 +990,57 @@ async def admin_regenerate_summary(
         ok = await generate_daily_summary(user_id, date_str)
         return {"ok": ok}
     raise HTTPException(400, "暂不支持该类型的手动重生成")
+@app.post("/api/summaries/intelligent")
+async def generate_intelligent_summary_endpoint(
+    user=Depends(get_current_user),
+):
+    """生成智能总结（心理学+哲学分析）"""
+    from intelligent_summary import generate_intelligent_summary
+    result = await generate_intelligent_summary(user["id"])
+    
+    if "error" in result and result["error"] == "insufficient_data":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "insufficient_data",
+                "message": result["message"],
+                "minimum_required": result.get("minimum_required", 3),
+                "current_count": result.get("current_count", 0)
+            }
+        )
+    
+    if not result.get("success", False):
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "analysis_failed",
+                "message": result.get("message", "分析失败")
+            }
+        )
+    
+    return result
+
+
+@app.get("/api/summaries/intelligent/status")
+async def get_intelligent_summary_status(
+    user=Depends(get_current_user),
+):
+    """检查智能总结生成状态和数据充足性"""
+    from intelligent_summary import collect_user_data
+    
+    user_data = collect_user_data(user["id"])
+    stats = user_data["statistics"]
+    
+    return {
+        "data_sufficient": stats["daily_summaries_count"] >= 3,
+        "daily_summaries_count": stats["daily_summaries_count"],
+        "minimum_required": 3,
+        "analysis_period_days": stats["analysis_period_days"],
+        "has_weekly_summaries": stats["weekly_summaries_count"] > 0,
+        "has_monthly_summaries": stats["monthly_summaries_count"] > 0,
+        "has_yearly_summaries": stats["yearly_summaries_count"] > 0
+    }
+
 
 
 @app.get("/")

@@ -14,6 +14,9 @@ from database import get_db
 from llm_service import chat_complete
 from rag_service import index_summary
 
+# 记忆与性格增强系统
+from memory_enhancement import process_enhanced_summary
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,44 +24,85 @@ logger = logging.getLogger(__name__)
 # 日摘要
 # ──────────────────────────────────────────────
 
-DAILY_SUMMARY_PROMPT = """这是 {nickname} 在 {date} 的日记对话，请生成一份简洁的日摘要。
+DAILY_SUMMARY_PROMPT = """基于{nickname}在{date}的对话，请生成日摘要并分析用户特征：
 
-要求：
-1. 今天发生了什么（事件，1-2句）
-2. 情绪状态（简述）
-3. 主要思考或感悟（1-2句）
+【事件摘要】
+1. 关键事件（时间、人物、活动）
+2. 情绪变化及原因
+3. 提到的兴趣/关注点
 
-然后在回复末尾输出一行 JSON（不要加代码块），格式：
-{{"emotion_tags": ["标签1","标签2"], "topic_tags": ["话题1","话题2"], "emotion_score": 0.5}}
-其中 emotion_score 为 -2 到 2 的小数（-2=极度低落，0=平静，2=非常积极）。
+【特征观察】
+1. 今日表现出的性格特点（如：开放性、条理性、社交倾向等）
+2. 情绪管理方式
+3. 沟通风格偏好
+
+【重要标记】
+标记需要跟进的重要事项（如有）
+
+在回复末尾输出一行JSON（不要加代码块），格式：
+{{
+  "events": ["事件1", "事件2"],
+  "emotion_trend": "情绪变化描述",
+  "observed_traits": ["特点1", "特点2"],
+  "important_topics": ["需要跟进的话题"],
+  "topic_tags": ["话题标签"],
+  "emotion_score": 0.5
+}}
+其中emotion_score为-2到2的小数（-2=极度低落，0=平静，2=非常积极）。
 
 对话内容：
 {messages}"""
 
-WEEKLY_SUMMARY_PROMPT = """以下是 {nickname} 在 {week_range} 的日摘要，请提炼一份周摘要。
+WEEKLY_SUMMARY_PROMPT = """基于{nickname}在{week_range}的日摘要，提炼周摘要并分析行为模式：
 
-要求：
-1. 本周主题（一句话）
-2. 情绪起伏（简述高低点）
-3. 反复出现的话题或关注点
-4. 成长/变化（如有）
+【周度回顾】
+1. 主要事件脉络和关联性
+2. 情绪周期规律（何时高涨/低落）
+3. 兴趣主题演变
 
-然后在回复末尾输出一行 JSON（不要加代码块），格式：
-{{"theme_tags": ["标签1","标签2"]}}
+【模式识别】
+1. 重复出现的行为模式
+2. 习惯养成情况（如记录频率、反思深度）
+3. 社交互动特点
+
+【性格特征更新】
+基于本周表现，更新对用户性格的理解
+
+在回复末尾输出一行JSON（不要加代码块），格式：
+{{
+  "weekly_theme": "本周主题",
+  "behavior_patterns": ["模式1", "模式2"],
+  "habit_strength": {{"习惯1": 0.8}},
+  "personality_insights": ["洞察1", "洞察2"],
+  "theme_tags": ["主题标签"]
+}}
 
 日摘要内容：
 {daily_summaries}"""
 
-MONTHLY_SUMMARY_PROMPT = """以下是 {nickname} 在 {year}年{month}月 的周摘要，请提炼一份月摘要。
+MONTHLY_SUMMARY_PROMPT = """基于{nickname}在{year}年{month}月的周摘要，生成月摘要并深化性格理解：
 
-要求：
-1. 本月成长主题
-2. 反复出现的模式或关注点
-3. 里程碑事件（如有）
-4. 给自己的一句话
+【月度成长】
+1. 重大进展和里程碑
+2. 挑战应对方式
+3. 成长轨迹
 
-然后在回复末尾输出一行 JSON（不要加代码块），格式：
-{{"milestone_tags": ["里程碑1","里程碑2"]}}
+【性格画像】
+1. 稳定的性格特征（基于大五人格模型）
+2. 价值观体现
+3. 核心需求和动机
+
+【个性化建议】
+基于用户特点，提出下月优化建议
+
+在回复末尾输出一行JSON（不要加代码块），格式：
+{{
+  "milestones": ["里程碑1", "里程碑2"],
+  "personality_traits": {{"开放性": 0.7, "尽责性": 0.8}},
+  "core_values": ["价值1", "价值2"],
+  "growth_suggestions": ["建议1", "建议2"],
+  "milestone_tags": ["里程碑标签"]
+}}
 
 周摘要内容：
 {weekly_summaries}"""
@@ -161,7 +205,6 @@ async def generate_daily_summary(user_id: int, target_date: str) -> bool:
     )
     resp = await chat_complete(
         [{"role": "user", "content": prompt}],
-        use_for="summary",
         user_id=user_id,
     )
 
@@ -193,6 +236,22 @@ async def generate_daily_summary(user_id: int, target_date: str) -> bool:
 
     # 尝试更新画像
     await _maybe_update_portrait(user_id, dict(user), content)
+    
+    # 记忆与性格增强处理
+    try:
+        # 构建JSON数据，包含新prompt返回的所有字段
+        enhanced_json = {
+            "events": extra.get("events", []),
+            "emotion_trend": extra.get("emotion_trend", ""),
+            "observed_traits": extra.get("observed_traits", []),
+            "important_topics": extra.get("important_topics", []),
+            "topic_tags": topic_tags,
+            "emotion_score": emotion_score
+        }
+        process_enhanced_summary(user_id, content, enhanced_json, "daily")
+    except Exception as e:
+        logger.warning(f"Enhanced summary processing failed for user {user_id}: {e}")
+    
     logger.info(f"Daily summary generated: user={user_id} date={target_date}")
     return True
 
@@ -232,7 +291,6 @@ async def generate_weekly_summary(user_id: int, year: int, week: int) -> bool:
     )
     resp = await chat_complete(
         [{"role": "user", "content": prompt}],
-        use_for="summary",
         user_id=user_id,
     )
 
@@ -252,6 +310,21 @@ async def generate_weekly_summary(user_id: int, year: int, week: int) -> bool:
         summary_id = cur.lastrowid
 
     index_summary(user_id, "周摘要", summary_id, week_range, content, theme_tags)
+    
+    # 记忆与性格增强处理
+    try:
+        # 构建JSON数据，包含新prompt返回的所有字段
+        enhanced_json = {
+            "weekly_theme": extra.get("weekly_theme", ""),
+            "behavior_patterns": extra.get("behavior_patterns", []),
+            "habit_strength": extra.get("habit_strength", {}),
+            "personality_insights": extra.get("personality_insights", []),
+            "theme_tags": theme_tags
+        }
+        process_enhanced_summary(user_id, content, enhanced_json, "weekly")
+    except Exception as e:
+        logger.warning(f"Enhanced weekly summary processing failed for user {user_id}: {e}")
+    
     logger.info(f"Weekly summary generated: user={user_id} {year}W{week:02d}")
     return True
 
@@ -301,7 +374,6 @@ async def generate_monthly_summary(user_id: int, year: int, month: int) -> bool:
     )
     resp = await chat_complete(
         [{"role": "user", "content": prompt}],
-        use_for="summary",
         user_id=user_id,
     )
 
@@ -321,6 +393,21 @@ async def generate_monthly_summary(user_id: int, year: int, month: int) -> bool:
         summary_id = cur.lastrowid
 
     index_summary(user_id, "月摘要", summary_id, f"{year}年{month}月", content, milestone_tags)
+    
+    # 记忆与性格增强处理
+    try:
+        # 构建JSON数据，包含新prompt返回的所有字段
+        enhanced_json = {
+            "milestones": extra.get("milestones", []),
+            "personality_traits": extra.get("personality_traits", {}),
+            "core_values": extra.get("core_values", []),
+            "growth_suggestions": extra.get("growth_suggestions", []),
+            "milestone_tags": milestone_tags
+        }
+        process_enhanced_summary(user_id, content, enhanced_json, "monthly")
+    except Exception as e:
+        logger.warning(f"Enhanced monthly summary processing failed for user {user_id}: {e}")
+    
     logger.info(f"Monthly summary generated: user={user_id} {year}-{month:02d}")
     return True
 
@@ -354,7 +441,6 @@ async def generate_yearly_summary(user_id: int, year: int) -> bool:
     )
     resp = await chat_complete(
         [{"role": "user", "content": prompt}],
-        use_for="summary",
         user_id=user_id,
     )
 
@@ -402,7 +488,6 @@ async def _maybe_update_portrait(user_id: int, user: dict, daily_summary: str):
         )
         content = await chat_complete(
             [{"role": "user", "content": prompt}],
-            use_for="portrait",
             user_id=user_id,
         )
         now = _now_cst().isoformat()

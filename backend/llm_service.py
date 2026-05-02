@@ -13,12 +13,11 @@ from database import get_db
 logger = logging.getLogger(__name__)
 
 
-def get_llm_config(use_for: str) -> Optional[dict]:
-    """从数据库获取指定用途的活跃 LLM 配置"""
+def get_llm_config(use_for: str = None) -> Optional[dict]:
+    """从数据库获取活跃的 LLM 配置（全局唯一激活配置）"""
     with get_db() as conn:
         row = conn.execute(
-            "SELECT * FROM llm_configs WHERE use_for=? AND is_active=1 ORDER BY id DESC LIMIT 1",
-            (use_for,),
+            "SELECT * FROM llm_configs WHERE is_active=1 ORDER BY id DESC LIMIT 1",
         ).fetchone()
     return dict(row) if row else None
 
@@ -32,7 +31,6 @@ def get_openai_client(config: dict) -> AsyncOpenAI:
 
 async def chat_stream(
     messages: list,
-    use_for: str = "chat",
     user_id: Optional[int] = None,
 ) -> AsyncIterator[str]:
     """流式对话，yield 文本片段"""
@@ -85,8 +83,7 @@ async def chat_complete(
         )
         text = resp.choices[0].message.content or ""
         usage = resp.usage
-        _log_llm_call(
-            user_id, use_for, config["model_name"],
+        _log_llm_call(user_id, use_for, config["model_name"],
             usage.prompt_tokens if usage else 0,
             usage.completion_tokens if usage else 0,
         )
@@ -103,7 +100,7 @@ def _log_llm_call(user_id, use_for, model_name, input_tokens, output_tokens):
                 """INSERT INTO llm_call_logs
                    (user_id, use_for, model_name, input_tokens, output_tokens, created_at)
                    VALUES (?,?,?,?,?,?)""",
-                (user_id, use_for, model_name, input_tokens, output_tokens,
+                (user_id, "global", model_name, input_tokens, output_tokens,
                  datetime.utcnow().isoformat()),
             )
     except Exception as e:

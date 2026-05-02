@@ -212,7 +212,8 @@ tr:hover td{background:rgba(232,201,126,.04)}
     <h3 id="llmModalTitle">新增 LLM 配置</h3>
     <input type="hidden" id="llm-id">
     <div class="form-group"><label>用途</label>
-      <select id="llm-use_for"><option value="chat">chat</option><option value="summary">summary</option><option value="portrait">portrait</option></select>
+      <div style="padding: 10px 12px; background: #1a2332; border: 1px solid #334155; border-radius: 8px; color: #e0ddd8;">全局配置 (所有应用共用)</div>
+      <input type="hidden" id="llm-use_for" value="global">
     </div>
     <div class="form-group"><label>Provider</label><input type="text" id="llm-provider" value="openai_compat"></div>
     <div class="form-group"><label>模型名</label><input type="text" id="llm-model" placeholder="doubao-seed-2-0-pro-260215"></div>
@@ -320,7 +321,7 @@ async function loadStats() {
   document.getElementById('s-tokens').textContent = fmtNum(d.tokens_today);
   const tbody = document.getElementById('modelStatsBody');
   tbody.innerHTML = (d.model_stats||[]).map(r=>
-    `<tr><td>${r.model_name}</td><td>${r.use_for}</td><td>${r.calls}</td><td>${fmtNum(r.input_t)}</td><td>${fmtNum(r.output_t)}</td></tr>`
+    `<tr><td>${r.model_name}</td><td>全局</td><td>${r.calls}</td><td>${fmtNum(r.input_t)}</td><td>${fmtNum(r.output_t)}</td></tr>`
   ).join('');
 }
 
@@ -404,7 +405,7 @@ async function loadLLM() {
   document.getElementById('llmBody').innerHTML = d.configs.map(c=>
     `<tr>
       <td>${c.id}</td>
-      <td><span class="badge badge-gold">${c.use_for}</span></td>
+      <td><span class="badge badge-gold">全局配置</span></td>
       <td>${c.provider}</td>
       <td>${c.model_name}</td>
       <td>${c.is_active ? '<span class="badge badge-green">启用</span>' : '<span class="badge badge-gray">禁用</span>'}</td>
@@ -419,7 +420,7 @@ async function loadLLM() {
 function openLLMModal(config) {
   document.getElementById('llmModalTitle').textContent = config ? '编辑 LLM 配置' : '新增 LLM 配置';
   document.getElementById('llm-id').value = config ? config.id : '';
-  document.getElementById('llm-use_for').value = config ? config.use_for : 'chat';
+  document.getElementById('llm-use_for').value = config ? config.use_for : 'global';
   document.getElementById('llm-provider').value = config ? config.provider : 'openai_compat';
   document.getElementById('llm-model').value = config ? config.model_name : '';
   document.getElementById('llm-key').value = config ? config.api_key : '';
